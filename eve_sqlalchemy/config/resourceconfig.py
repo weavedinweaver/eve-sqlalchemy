@@ -52,7 +52,7 @@ class ResourceConfig(object):
             the relationship configuration expected by Eve.
         """
         self._ignored_fields = set(
-            [f for f in self.model.__dict__ if f[0] == '_'] +
+            # [f for f in self.model.__dict__ if f[0] == '_'] +
             [date_created, last_updated, etag]) - \
             set([self.id_field, self.item_lookup_field])
         field_configs = self._create_field_configs()

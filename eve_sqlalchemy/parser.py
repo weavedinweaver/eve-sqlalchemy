@@ -19,8 +19,8 @@ import sqlalchemy
 from eve.utils import str_to_date
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.sql import expression as sqla_exp
-
-
+from weaver.core.model.schema import getattribute
+from flask import request
 class ParseError(ValueError):
     pass
 
@@ -34,8 +34,8 @@ def parse_dictionary(filter_dict, model):
     :param model: SQLAlchemy model class used to create the BinaryExpressions
     :return list: List of conditions as SQLAlchemy BinaryExpressions
     """
-    if len(filter_dict) == 0:
-        return []
+    # if len(filter_dict) == 0:
+    #     return []
 
     conditions = []
 
@@ -60,7 +60,7 @@ def parse_dictionary(filter_dict, model):
             except (TypeError, ValueError):
                 raise ParseError("Can't parse expression '{0}'".format(v))
 
-        attr = getattr(model, k)
+        attr, v = getattribute(k,v,model)
 
         if isinstance(attr, AssociationProxy):
             # If the condition is a dict, we must use 'any' method to match
@@ -70,11 +70,21 @@ def parse_dictionary(filter_dict, model):
             else:
                 conditions.append(attr.contains(v))
 
-        elif hasattr(attr, 'property') and \
-                hasattr(attr.property, 'remote_side'):  # a relation
-            for fk in attr.property.remote_side:
-                conditions.append(sqla_op.eq(fk, v))
-
+        elif (hasattr(attr, 'property') and
+              hasattr(attr.property, 'remote_side')):
+            relationship = attr.property
+            if relationship.primaryjoin is not None:
+                conditions.append(relationship.primaryjoin)
+            if relationship.secondaryjoin is not None:
+                conditions.append(relationship.secondaryjoin)
+            remote_column = list(relationship.remote_side)[0]
+            if relationship.uselist:
+                if callable(relationship.argument):
+                    mapper = relationship.argument().__mapper__
+                else:
+                    mapper = relationship.argument
+                remote_column = list(mapper.primary_key)[0]
+            conditions.append(sqla_op.eq(remote_column, v))
         else:
             try:
                 new_op, v = parse_sqla_operators(v)

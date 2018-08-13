@@ -54,7 +54,7 @@ class SQL(DataLayer):
         except Exception as e:
             raise ConnectionException(e)
 
-    def find(self, resource, req, sub_resource_lookup):
+    def find(self, resource, req, sub_resource_lookup,resource_domain):
         """Retrieves a set of documents matching a given request. Queries can
         be expressed in two different formats: the mongo query syntax, and the
         python syntax. The first kind of query would look like: ::

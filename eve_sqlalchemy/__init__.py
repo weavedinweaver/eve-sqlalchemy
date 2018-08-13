@@ -12,6 +12,7 @@ from copy import copy
 
 import flask_sqlalchemy
 import simplejson as json
+from weaver.core.model.schema import Permission
 from eve.io.base import ConnectionException, DataLayer
 from eve.utils import debug_error_message, str_to_date
 from flask import abort

@@ -116,8 +116,10 @@ class SQL(DataLayer):
                 req.if_modified_since)
             args['spec'].append(updated_filter)
 
-        query = self.driver.session.query(model)
-
+        if resource_domain[resource]['custom_params']:
+            query = Permission(self.driver.session, model, resource_domain[resource]['params'], sub_resource_lookup).query()
+        else:
+            query = self.driver.session.query(model)
         if args['sort']:
             ql = []
             for sort_item in args['sort']:

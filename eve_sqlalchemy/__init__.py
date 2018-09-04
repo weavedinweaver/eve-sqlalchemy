@@ -12,11 +12,10 @@ from copy import copy
 
 import flask_sqlalchemy
 import simplejson as json
-from weaver.core.model.schema import Permission
 from eve.io.base import ConnectionException, DataLayer
 from eve.utils import debug_error_message, str_to_date
 from flask import abort
-
+from flask import current_app as app
 from .__about__ import __version__  # noqa
 from .parser import ParseError, parse, parse_dictionary, parse_sorting, sqla_op
 from .structures import SQLAResultCollection
@@ -117,10 +116,9 @@ class SQL(DataLayer):
                 req.if_modified_since)
             args['spec'].append(updated_filter)
 
+        query = self.driver.session.query(model)
         if resource_domain[resource]['custom_params']:
-            query = Permission(self.driver.session, model, resource_domain[resource]['params'], sub_resource_lookup).query()
-        else:
-            query = self.driver.session.query(model)
+            getattr(app, "custom_permission_class")(self.driver.session, model, resource_domain[resource]['params'], sub_resource_lookup, query)
         if args['sort']:
             ql = []
             for sort_item in args['sort']:

@@ -14,8 +14,9 @@ import copy
 import re
 
 from eve.utils import config
+from sqlalchemy import inspect
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
-
+from flask import g
 
 def merge_dicts(*dicts):
     """
@@ -89,9 +90,19 @@ def sqla_object_to_dict(obj, fields):
 
     return result
 
+def object_as_dict(obj):
+    return {c.key: getattr(obj, c.key)
+            for c in inspect(obj).mapper.column_attrs}
 
 def _sanitize_value(value):
     if isinstance(value.__class__, DeclarativeMeta):
+        try:
+            for embedded_fields in g.config_setting[0].DOMAIN[g.config_setting[1]]['embedded_fields']:
+                for relationship in value.__mapper__.relationships.values():
+                    if hasattr(relationship.mapper.class_, embedded_fields):
+                        return dict([(k, _sanitize_value(v)) for k, v in object_as_dict(value).iteritems()])
+        except:
+            return _get_id(value)
         return _get_id(value)
     elif isinstance(value, collections.Mapping):
         return dict([(k, _sanitize_value(v)) for k, v in value.items()])
@@ -110,7 +121,7 @@ def _get_id(obj):
 
 def extract_sort_arg(req):
     if req.sort:
-        if re.match('^[-,\w]+$', req.sort):
+        if re.match('^[-,.\w]+$', req.sort):
             arg = []
             for s in req.sort.split(','):
                 if s.startswith('-'):

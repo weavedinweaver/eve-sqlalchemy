@@ -118,7 +118,15 @@ class SQL(DataLayer):
 
         query = self.driver.session.query(model)
         if resource_domain[resource]['custom_params']:
-            getattr(app, "custom_permission_class")(self.driver.session, model, resource_domain[resource]['params'], sub_resource_lookup, query)
+            kwargs = {
+                'resource_domain': resource_domain,
+                'resource_name': resource,
+                'query' : [query],
+                'fields' : fields,
+                'model' : model
+            }
+            getattr(app, "custom_permission_class")(**kwargs)
+            query, fields = kwargs.get('query')[0], kwargs.get('fields')
         if args['sort']:
             ql = []
             for sort_item in args['sort']:

@@ -19,8 +19,7 @@ import sqlalchemy
 from eve.utils import str_to_date
 from sqlalchemy.ext.associationproxy import AssociationProxy
 from sqlalchemy.sql import expression as sqla_exp
-from weaver.core.model.schema import getattribute
-from flask import request
+from flask import current_app as app, g
 class ParseError(ValueError):
     pass
 
@@ -60,7 +59,13 @@ def parse_dictionary(filter_dict, model):
             except (TypeError, ValueError):
                 raise ParseError("Can't parse expression '{0}'".format(v))
 
-        attr, v = getattribute(k,v,model)
+        kwargs = {'field': k, 'value': v, 'model': model, 'attr': ''}
+        custom_url_logic = g.config_setting[0].DOMAIN[g.config_setting[1]].get('custom_url_logic')
+        if custom_url_logic:
+            getattr(app, "custom_url_get_attribute")(kwargs)
+            attr, v = kwargs.get('attr'), kwargs.get('value')
+        else:
+            attr = getattr(model, k)
 
         if isinstance(attr, AssociationProxy):
             # If the condition is a dict, we must use 'any' method to match

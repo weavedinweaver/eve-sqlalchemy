@@ -59,7 +59,7 @@ def parse_dictionary(filter_dict, model):
             except (TypeError, ValueError):
                 raise ParseError("Can't parse expression '{0}'".format(v))
 
-        kwargs = {'field': k, 'value': v, 'model': model, 'attr': ''}
+        kwargs = {'field': k.split('.')[0], 'value': v, 'model': model, 'attr': ''}
         custom_url_logic = g.config_setting[0].DOMAIN[g.config_setting[1]].get('custom_url_logic')
         if custom_url_logic:
             getattr(app, "custom_url_get_attribute")(kwargs)
@@ -89,7 +89,14 @@ def parse_dictionary(filter_dict, model):
                 else:
                     mapper = relationship.argument
                 remote_column = list(mapper.primary_key)[0]
-            conditions.append(sqla_op.eq(remote_column, v))
+            try:
+                field = k.split('.')[1]
+                try:
+                    conditions.append(sqla_op.eq(getattr(relationship.mapper.class_, field), v))
+                except:
+                    raise AttributeError
+            except:
+                conditions.append(sqla_op.eq(remote_column, v))
         else:
             try:
                 new_op, v = parse_sqla_operators(v)

@@ -78,7 +78,7 @@ def sqla_object_to_dict(obj, fields):
             if hasattr(val, 'copy'):
                 val = val.copy()
 
-            result[field] = _sanitize_value(val)
+            result[field] = _sanitize_value(val, obj=obj)
         except AttributeError:
             # Ignore if the requested field does not exist
             # (may be wrong embedding parameter)
@@ -94,20 +94,19 @@ def object_as_dict(obj):
     return {c.key: getattr(obj, c.key)
             for c in inspect(obj).mapper.column_attrs}
 
-def _sanitize_value(value):
+def _sanitize_value(value, obj=None):
     if isinstance(value.__class__, DeclarativeMeta):
         try:
             for embedded_fields in g.config_setting[0].DOMAIN[g.config_setting[1]]['embedded_fields']:
-                for relationship in value.__mapper__.relationships.values():
-                    if hasattr(relationship.mapper.class_, embedded_fields):
-                        return dict([(k, _sanitize_value(v)) for k, v in object_as_dict(value).iteritems()])
+                if getattr(obj, embedded_fields)[0].__mapper__.class_ == value.__mapper__.class_:
+                    return dict([(k, _sanitize_value(v)) for k, v in object_as_dict(value).iteritems()])
         except:
             return _get_id(value)
         return _get_id(value)
     elif isinstance(value, collections.Mapping):
         return dict([(k, _sanitize_value(v)) for k, v in value.items()])
     elif isinstance(value, collections.MutableSequence):
-        return [_sanitize_value(v) for v in value]
+        return [_sanitize_value(v, obj=obj) for v in value]
     elif isinstance(value, collections.Set):
         return set(_sanitize_value(v) for v in value)
     else:

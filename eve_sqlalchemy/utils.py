@@ -98,7 +98,8 @@ def _sanitize_value(value, obj=None):
     if isinstance(value.__class__, DeclarativeMeta):
         try:
             for embedded_fields in g.config_setting[0].DOMAIN[g.config_setting[1]]['embedded_fields']:
-                if getattr(obj, embedded_fields)[0].__mapper__.class_ == value.__mapper__.class_:
+                embedded_attr = getattr(obj, embedded_fields)
+                if embedded_attr and embedded_attr[0].__mapper__.class_ == value.__mapper__.class_:
                     return dict([(k, _sanitize_value(v)) for k, v in object_as_dict(value).iteritems()])
         except:
             return _get_id(value)

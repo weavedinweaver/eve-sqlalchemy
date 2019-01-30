@@ -9,7 +9,7 @@
 """
 from __future__ import unicode_literals
 
-from .utils import sqla_object_to_dict
+from .utils import sqla_object_to_dict, custom_sqla_obj_to_dict
 
 
 class SQLAResultCollection(object):

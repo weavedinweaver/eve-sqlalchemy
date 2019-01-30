@@ -39,7 +39,8 @@ class SQLAResultCollection(object):
 
         # save the count of items to an internal variables before applying the
         # limit to the query as that screws the count returned by it
-        self._count = self._query.count()
+        # self._count = self._query.count()
+        self._count = 0
         if self._max_results:
             self._query = self._query.limit(self._max_results)
             if self._page:
@@ -48,7 +49,7 @@ class SQLAResultCollection(object):
 
     def __iter__(self):
         for i in self._query:
-            yield sqla_object_to_dict(i, self._fields)
+            yield custom_sqla_obj_to_dict(i, self)
 
     def count(self, **kwargs):
         return self._count

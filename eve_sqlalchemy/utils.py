@@ -54,6 +54,84 @@ def validate_filters(where, resource):
                 return "filter on '%s' not allowed" % key
     return None
 
+def custom_sqla_obj_to_dict(obj, sqla_obj=None, fields=None, resource=None, embedded_till_now=''):
+    result = {}
+    fields = sqla_obj._fields if sqla_obj else fields
+    resource = sqla_obj._resource if sqla_obj else resource
+    if sqla_obj:
+        config.BASE_RESOURCE = sqla_obj._resource
+    for field in map(lambda f: f.split('.', 1)[0], fields):
+        try:
+            val = obj.__getattribute__(field)
+
+            # If association proxies are embedded, their values must be copied
+            # since they are garbage collected when Eve try to encode the
+            # response.
+            if hasattr(val, 'copy'):
+                val = val.copy()
+
+            result[field] = _custom_sanitize_value(val, base_resource=config.BASE_RESOURCE, resource=resource,
+                                                   field=field, embedded_till_now=embedded_till_now)
+        except AttributeError:
+            # Ignore if the requested field does not exist
+            # (may be wrong embedding parameter)
+            pass
+
+    # We have to remove the ETAG if it's None so Eve will add it later again.
+    if result.get(config.ETAG, False) is None:
+        del (result[config.ETAG])
+
+    return result
+
+
+def _custom_sanitize_value(value, base_resource, embedded_till_now=None, resource=None,
+                           field=None):
+    if isinstance(value.__class__, DeclarativeMeta):
+        if field:
+            if _embedded_doc(field, base_resource, embedded_till_now):
+                args = {
+                    'spec': '',
+                    'sort': ''
+                }
+                resource, fields = _datasource(field, resource)
+                embedded_till_now = embedded_till_now + field + '.' if embedded_till_now else field + '.'
+                return custom_sqla_obj_to_dict(value, fields=fields, resource=resource,
+                                               embedded_till_now=embedded_till_now)
+            else:
+                return _get_id(value)
+        return _get_id(value)
+    elif isinstance(value, collections.Mapping):
+        return dict([(k, _custom_sanitize_value(v, resource=resource, field=field, base_resource=config.BASE_RESOURCE,
+                                                embedded_till_now=embedded_till_now)) for k, v in value.items()])
+    elif isinstance(value, collections.MutableSequence):
+        return [_custom_sanitize_value(v, resource=resource, field=field, base_resource=config.BASE_RESOURCE,
+                                       embedded_till_now=embedded_till_now) for v in value]
+    elif isinstance(value, collections.Set):
+        return set(_custom_sanitize_value(v) for v in value)
+    else:
+        return copy.copy(value)
+
+
+def _datasource(field, resource):
+    field_rel = config.DOMAIN[resource]['schema'][field]
+    resource = field_rel['schema']['data_relation']['resource'] \
+        if field_rel.get('schema') else field_rel['data_relation']['resource']
+    resource_def = config.SOURCES[resource]
+    # filter_ = resource_def['filter']
+    projection_ = resource_def['projection'].copy()
+    # sort_ = resource_def['default_sort'].copy()
+    return resource, [i for i in projection_ if projection_[i]]
+
+
+def _embedded_doc(field, base_resource, embedded_till_now):
+    req = parse_request(base_resource)
+    embedded_fields = resolve_embedded_fields(base_resource, req)
+    stripped_embedded_fields = [i.replace(embedded_till_now, '') for i in embedded_fields]
+    for embedded_field in stripped_embedded_fields:
+        if embedded_field.split('.')[0] == field:
+            return True
+    return False
+
 
 def sqla_object_to_dict(obj, fields):
     """ Creates a dict containing copies of the requested fields from the

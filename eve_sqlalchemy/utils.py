@@ -14,6 +14,7 @@ import copy
 import re
 
 from eve.utils import config
+from eve.methods.common import parse_request, resolve_embedded_fields
 from sqlalchemy.ext.declarative.api import DeclarativeMeta
 
 

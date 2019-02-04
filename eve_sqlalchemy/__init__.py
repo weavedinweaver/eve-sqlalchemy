@@ -121,7 +121,7 @@ class SQL(DataLayer):
         if req.page > 1:
             args['page'] = req.page
             
-       query = self.driver.session.query(model)
+        query = self.driver.session.query(model)
 
         if args['sort']:
             ql = []

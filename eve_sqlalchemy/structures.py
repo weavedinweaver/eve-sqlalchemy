@@ -32,24 +32,29 @@ class SQLAResultCollection(object):
         self._max_results = kwargs.get('max_results')
         self._page = kwargs.get('page')
         self._resource = kwargs.get('resource')
-        if self._spec:
-            self._query = self._query.filter(*self._spec)
-        if self._sort:
-            self._query = self._query.order_by(*self._sort)
+        if not self._single_query_embedding:
+            if self._spec:
+                self._query = self._query.filter(*self._spec)
+            if self._sort:
+                self._query = self._query.order_by(*self._sort)
 
-        # save the count of items to an internal variables before applying the
-        # limit to the query as that screws the count returned by it
-        # self._count = self._query.count()
-        self._count = 0
-        if self._max_results:
-            self._query = self._query.limit(self._max_results)
-            if self._page:
-                self._query = self._query.offset((self._page - 1) *
-                                                 self._max_results)
+            # save the count of items to an internal variables before applying the
+            # limit to the query as that screws the count returned by it
+            self._count = self._query.count()
+            if self._max_results:
+                self._query = self._query.limit(25)
+                if self._page:
+                    self._query = self._query.offset((self._page - 1) *
+                                                     self._max_results)
+        else:
+            self._count = 0
 
     def __iter__(self):
         for i in self._query:
-            yield custom_sqla_obj_to_dict(i, self)
+            if self._single_query_embedding:
+                yield custom_sqla_obj_to_dict(i, self)
+            else:
+                yield sqla_object_to_dict(i,self._fields)
 
     def count(self, **kwargs):
         return self._count

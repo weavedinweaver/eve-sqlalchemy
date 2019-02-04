@@ -32,6 +32,7 @@ class SQLAResultCollection(object):
         self._max_results = kwargs.get('max_results')
         self._page = kwargs.get('page')
         self._resource = kwargs.get('resource')
+        self._single_query_embedding = kwargs['single_query_embedding']
         if not self._single_query_embedding:
             if self._spec:
                 self._query = self._query.filter(*self._spec)

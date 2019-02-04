@@ -115,22 +115,27 @@ class SQL(DataLayer):
                 getattr(model, self.app.config.LAST_UPDATED),
                 req.if_modified_since)
             args['spec'].append(updated_filter)
+            
+        if req.max_results:
+            args['max_results'] = req.max_results
+        if req.page > 1:
+            args['page'] = req.page
+            
+       query = self.driver.session.query(model)
 
-        query = self.driver.session.query(model)
-        if resource_domain[resource]['custom_params']:
-            kwargs = {'query': [query], 'resource_domain': resource_domain, 'resource_name': resource}
-            getattr(app, "custom_permission_class")(**kwargs)
-            query = kwargs['query'][0]
         if args['sort']:
             ql = []
             for sort_item in args['sort']:
                 ql.append(parse_sorting(model, query, *sort_item))
             args['sort'] = ql
 
-        if req.max_results:
-            args['max_results'] = req.max_results
-        if req.page > 1:
-            args['page'] = req.page
+        if resource_domain[resource]['custom_params']:
+            kwargs = {'query': [query], 'resource_domain': resource_domain, 'resource_name': resource, 'args': args}
+            getattr(app, "custom_permission_class")(**kwargs)
+            query = kwargs['query'][0]
+
+        args['single_query_embedding'] = resource_domain[resource]['single_query_embedding']
+
         return SQLAResultCollection(query, fields, **args)
 
     def find_one(self, resource, req, **lookup):

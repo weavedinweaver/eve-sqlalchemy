@@ -151,7 +151,7 @@ class ResourceConfig(object):
 
     def _get_relationship_fields(self, proxied_relationships):
         return (f.key for f in self._mapper.relationships
-                if f.key not in self._ignored_fields | proxied_relationships)
+                if f.key not in self._ignored_fields)
 
     def _get_column_fields(self):
         # We don't include "plain" foreign keys in our schema, as embedding

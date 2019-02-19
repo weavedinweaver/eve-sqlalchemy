@@ -109,6 +109,8 @@ def _custom_sanitize_value(value, base_resource, embedded_till_now=None, resourc
                                        embedded_till_now=embedded_till_now) for v in value]
     elif isinstance(value, collections.Set):
         return set(_custom_sanitize_value(v) for v in value)
+    elif isinstance(value, ModuleType):
+        return value.name if hasattr(value, 'name') else value.label
     else:
         return copy.copy(value)
 
@@ -178,6 +180,8 @@ def _sanitize_value(value):
         return [_sanitize_value(v) for v in value]
     elif isinstance(value, collections.Set):
         return set(_sanitize_value(v) for v in value)
+    elif isinstance(value, ModuleType):
+        return value.name if hasattr(value, 'name') else value.label
     else:
         return copy.copy(value)
 

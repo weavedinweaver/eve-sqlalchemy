@@ -244,18 +244,16 @@ class SQL(DataLayer):
         query = self.driver.session.query(model)
 
         # Find and delete the old object
-        old_model_instance = query.filter(*filter_).first()
-        if old_model_instance is None:
-            abort(500, description=debug_error_message('Object not existent'))
-        self._handle_immutable_id(id_field, old_model_instance, document)
-        self.driver.session.delete(old_model_instance)
-
-        # create and insert the new one
-        model_instance = self._create_model_instance(resource, document)
-        id_field = self._id_field(resource)
-        setattr(model_instance, id_field, id_)
+        model_instance = query.filter(*filter_).first()
+        for key, value in document.iteritems():
+            try:
+                if hasattr(model, key):
+                    setattr(model_instance, key, value)
+            except AttributeError:
+                pass
         self.driver.session.add(model_instance)
         self.driver.session.commit()
+
 
     def update(self, resource, id_, updates, original):
         model, filter_, _, _ = self._datasource_ex(resource, [])

@@ -47,7 +47,7 @@ class ValidatorSQL(Validator):
     def validate_replace(self, document, _id, original_document=None):
         self._id = _id
         self._original_document = original_document
-        return self.validate(document)
+        return self.validate(document, update=True)
 
     def _validate_unique(self, unique, field, value):
         if unique:

@@ -72,12 +72,12 @@ class ResourceConfig(object):
     @id_field.setter
     def id_field(self, id_field):
         pk_columns = [c.name for c in self._mapper.primary_key]
-        if not (len(pk_columns) == 1 and pk_columns[0] == id_field):
-            column = self._get_column(id_field)
-            if not column.unique:
-                raise ConfigException(
-                    "{model}.{id_field} is not unique."
-                    .format(model=self.model.__name__, id_field=id_field))
+        #if not (len(pk_columns) == 1 and pk_columns[0] == id_field):
+        #    column = self._get_column(id_field)
+        #    if not column.unique:
+        #        raise ConfigException(
+        #            "{model}.{id_field} is not unique."
+        #            .format(model=self.model.__name__, id_field=id_field))
         self._id_field = id_field
 
     def _deduce_id_field(self):
